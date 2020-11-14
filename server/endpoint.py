@@ -1,7 +1,6 @@
 class Endpoint:
     def __init__(self, callback):
         self._callback = callback
-        self.supported_methods = ["get", "post", "options", "head", "patch", "delete"]    
     
     async def _middleware(self, request):
         return request
