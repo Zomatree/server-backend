@@ -6,19 +6,22 @@ import re
 import time
 import asyncio
 import inspect
+import logging
 
 
 class Server:
     def __init__(self, *, loop=None):
         self.loop = loop or asyncio.get_event_loop()
         self.endpoints = {}
-        self._not_found = Endpoint(self._not_found)
-        self._invalid_method = Endpoint(self._invalid_method)
+        self._not_found = Endpoint(self._not_found, "*")
+        self._invalid_method = Endpoint(self._invalid_method, "*")
 
     def add_endpoint(self, method, url, func):
-        endpoint = Endpoint(func)
+
         method = method.upper()
         url = url.strip("/")
+        url = f"^{url}$"  # thanks re.match
+        endpoint = Endpoint(func, url)
         if url not in self.endpoints:
             self.endpoints[url] = {}
         self.endpoints[url][method] = endpoint
@@ -30,6 +33,8 @@ class Server:
         method, path, protocol = request.decode().split()
         path = path.split("?", 1)
         params = ""
+        
+        logging.info(f"{method} {path}")
 
         if len(path) == 2:
             params = path[1]
@@ -50,9 +55,12 @@ class Server:
         for _endpoint, handles in self.endpoints.items():
             match = re.match(_endpoint, path, re.IGNORECASE)
             if match:
+                logging.info(f"Matching {_endpoint}")
                 endpoint = handles.get(method, self._invalid_method)
                 match_groups = match.groups()
-
+        
+        logging.info(f"Serving: {endpoint.url}")
+        
         headers = {}
         while True:
             header = await reader.readline()
@@ -83,6 +91,7 @@ class Server:
 
     async def _not_found(self, request):
         request.set_body("404: Not Found")
+        request.status = 404
 
     def invalid_method(self, func):
         self._invalid_method = Endpoint(func)
@@ -90,6 +99,7 @@ class Server:
 
     async def _invalid_method(self, request):
         request.set_body("405: Method Not Allowed")
+        request.status = 405
 
     async def start(self, host, port):
         await self.init()

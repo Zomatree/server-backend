@@ -1,7 +1,8 @@
 class Endpoint:
-    def __init__(self, callback):
+    def __init__(self, callback, url):
         self._callback = callback
-    
+        self.url = url
+   
     async def _middleware(self, request):
         return request
 
