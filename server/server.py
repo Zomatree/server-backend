@@ -1,13 +1,13 @@
 from .request import Request
 from .endpoint import Endpoint
-from .error import HttpException
+from .error import HTTPException
 
 import re
 import time
 import asyncio
 import inspect
 import logging
-
+import traceback
 
 class Server:
     def __init__(self, *, loop=None):
@@ -79,10 +79,14 @@ class Server:
 
         try:
             await endpoint.invoke(request)
-        except HttpException as e:
+        except HTTPException as e:
             request.set_body(repr(e))
             request.status = e.code
-
+        except Exception as e:
+            request.set_body("500: Internal Server Error")
+            request.status = 500
+            traceback.print_exception(type(e), e, e.__traceback__)
+    
         await request.finish()
 
     def not_found(self, func):
