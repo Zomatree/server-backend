@@ -134,6 +134,5 @@ class Server:
     async def init(self):
         pass
 
-    async def get_request(self, body, params_dict, match_groups, headers, reader, writer):
+    def get_request(self, body, params_dict, match_groups, headers, reader, writer):
         return Request(body, params_dict, match_groups, headers, reader, writer)
-    
